@@ -1,0 +1,32 @@
+{
+  "name": "personal-financial-adviser",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A personal financial adviser web application tracking cash flow, investments, real estate, and long-term life goals.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "emulators": "firebase emulators:start"
+  },
+  "dependencies": {
+    "firebase": "^11.3.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "vite": "^5.4.11"
+  }
+}

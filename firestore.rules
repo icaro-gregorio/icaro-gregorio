@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Personal financial data is per-user and private. Every document lives under
+// /users/{uid}/... and is readable/writable only by the authenticated owner.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // All financial collections are nested under the owning user.
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+  }
+}
