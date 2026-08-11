@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Plus, Trash2, Pencil, X, Database, ArrowLeftRight } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Database, ArrowLeftRight, Upload } from 'lucide-react';
 import { useData } from '../context/DataContext.jsx';
 import { Card } from '../components/ui/Card.jsx';
 import StatCard from '../components/ui/StatCard.jsx';
 import { Field, TextInput, Select, Button } from '../components/ui/Field.jsx';
 import DemoNotice from '../components/ui/DemoNotice.jsx';
+import ImportModal from '../components/cashflow/ImportModal.jsx';
 import CashFlowBars from '../components/charts/CashFlowBars.jsx';
 import {
   TRANSACTION_CATEGORIES,
@@ -37,12 +38,13 @@ const emptyForm = {
 };
 
 export default function CashFlow() {
-  const { transactions, accounts, isDemo, upsert, remove, seedSampleData } = useData();
+  const { transactions, accounts, isDemo, upsert, bulkUpsert, remove, seedSampleData } = useData();
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [acctName, setAcctName] = useState('');
   const [acctType, setAcctType] = useState(ACCOUNT_TYPE.CREDIT_CARD);
+  const [importing, setImporting] = useState(false);
 
   const accountName = useMemo(() => {
     const m = new Map(accounts.map((a) => [a.id, a.name]));
@@ -219,8 +221,13 @@ export default function CashFlow() {
         subtitle={`${transactions.length} record${transactions.length === 1 ? '' : 's'}`}
         bodyClass=""
         action={
-          !isDemo && transactions.length === 0 ? (
-            <Button variant="ghost" onClick={seed} disabled={busy}><Database size={16} /> Load sample data</Button>
+          !isDemo ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="ghost" onClick={() => setImporting(true)}><Upload size={16} /> Import CSV</Button>
+              {transactions.length === 0 && (
+                <Button variant="ghost" onClick={seed} disabled={busy}><Database size={16} /> Load sample data</Button>
+              )}
+            </div>
           ) : null
         }
       >
@@ -271,6 +278,13 @@ export default function CashFlow() {
           </div>
         )}
       </Card>
+
+      <ImportModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        accounts={accounts}
+        onImport={(txns) => bulkUpsert(COLLECTIONS.TRANSACTIONS, txns, 'id')}
+      />
     </>
   );
 }

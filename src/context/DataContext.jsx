@@ -22,6 +22,7 @@ import {
   saveProfile as fsSaveProfile,
   upsertEntity,
   deleteEntity,
+  bulkUpsert as fsBulkUpsert,
   seedUserData,
 } from '../firebase/firestore.js';
 import { makeAdviserProfile } from '../models/schema.js';
@@ -87,6 +88,7 @@ export function DataProvider({ children }) {
         loading: false,
         saveProfile: denied,
         upsert: denied,
+        bulkUpsert: denied,
         remove: denied,
         seedSampleData: denied,
       };
@@ -101,6 +103,9 @@ export function DataProvider({ children }) {
       // Create/update an entity in a collection. `idField` names its id key.
       upsert: (collectionName, entity, idField = 'id') =>
         upsertEntity(uid, collectionName, entity[idField], entity),
+      // Create/update many entities at once (used by CSV import).
+      bulkUpsert: (collectionName, entities, idField = 'id') =>
+        fsBulkUpsert(uid, collectionName, entities, idField),
       // Delete by id.
       remove: (collectionName, id) => deleteEntity(uid, collectionName, id),
       // Populate an empty account with the sample dataset.

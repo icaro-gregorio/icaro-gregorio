@@ -67,6 +67,16 @@ export function deleteEntity(uid, name, id) {
   return deleteDoc(entityDocRef(uid, name, id));
 }
 
+/** Write many entities efficiently, chunked under Firestore's 500-op batch limit. */
+export async function bulkUpsert(uid, name, items, idField) {
+  for (let i = 0; i < items.length; i += 450) {
+    const chunk = items.slice(i, i + 450);
+    const batch = writeBatch(db);
+    for (const item of chunk) batch.set(entityDocRef(uid, name, item[idField]), item);
+    await batch.commit();
+  }
+}
+
 /**
  * Seed a fresh account with a dataset (used by the "Load sample data" action and
  * available for tests). Writes the profile plus every collection in one batch.
