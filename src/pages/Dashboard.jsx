@@ -20,6 +20,7 @@ import {
   debtToIncome,
   portfolioSummary,
   goalProgress,
+  monthlyCashFlowTrend,
 } from '../utils/finance.js';
 import {
   formatCurrency,
@@ -43,7 +44,18 @@ function Legend({ items }) {
 
 export default function Dashboard() {
   const data = useData();
-  const { profile, investments, properties, accounts, transactions, netWorthTrend, cashFlowTrend } = data;
+  const { profile, investments, properties, accounts, transactions, isDemo, seedSampleData } = data;
+
+  // Trends: demo mode ships historical arrays; live mode derives what it can
+  // from the user's own transactions (net-worth history accrues over time).
+  const netWorthTrend = data.netWorthTrend ?? [];
+  const cashFlowTrend = useMemo(
+    () => data.cashFlowTrend ?? monthlyCashFlowTrend(transactions, 6),
+    [data.cashFlowTrend, transactions],
+  );
+
+  const hasAnyData =
+    transactions.length || investments.length || properties.length || accounts.length;
 
   const nw = useMemo(
     () => netWorthSummary({ investments, properties, accounts }),
@@ -59,7 +71,8 @@ export default function Dashboard() {
 
   // Month-over-month net-worth delta for the headline tile.
   const nwSeries = netWorthTrend;
-  const nwDelta = nwSeries.length >= 2
+  const hasNwHistory = nwSeries.length >= 2;
+  const nwDelta = hasNwHistory
     ? nwSeries[nwSeries.length - 1].value - nwSeries[nwSeries.length - 2].value
     : 0;
 
@@ -91,15 +104,27 @@ export default function Dashboard() {
 
   return (
     <>
+      {/* Empty-account nudge (live mode, no data yet) */}
+      {!isDemo && !hasAnyData && (
+        <div className="demo-notice" style={{ marginBottom: 18 }}>
+          <span>
+            <strong>Welcome!</strong> Your workspace is empty. Add data on the module pages, or
+          </span>
+          <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => seedSampleData()}>
+            Load sample data
+          </button>
+        </div>
+      )}
+
       {/* --- Executive stat row --- */}
       <div className="grid stat-grid">
         <StatCard
           label="Total Net Worth"
           value={formatCurrency(nw.netWorth)}
           icon={Wallet}
-          delta={formatSigned(nwDelta)}
-          deltaDirection={nwDelta >= 0 ? 'up' : 'down'}
-          caption="vs last month"
+          delta={hasNwHistory ? formatSigned(nwDelta) : null}
+          deltaDirection={hasNwHistory ? (nwDelta >= 0 ? 'up' : 'down') : 'neutral'}
+          caption={hasNwHistory ? 'vs last month' : 'current position'}
           accent="var(--series-1)"
         />
         <StatCard
@@ -131,9 +156,18 @@ export default function Dashboard() {
       <div className="grid cols-2 mt-18">
         <Card
           title="Net Worth Trajectory"
-          subtitle="Total assets less liabilities · trailing 12 months"
+          subtitle={hasNwHistory ? 'Total assets less liabilities · trailing 12 months' : 'Total assets less liabilities'}
         >
-          <NetWorthArea data={nwSeries} />
+          {hasNwHistory ? (
+            <NetWorthArea data={nwSeries} />
+          ) : (
+            <div className="placeholder-page" style={{ padding: '40px 24px' }}>
+              <div className="stat-value tnum">{formatCurrency(nw.netWorth)}</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13.5, maxWidth: 320 }}>
+                Your net-worth history will chart here as monthly snapshots build up over time.
+              </p>
+            </div>
+          )}
         </Card>
 
         <Card title="Life Goals" subtitle="Progress toward long-term targets">
@@ -171,19 +205,28 @@ export default function Dashboard() {
         </Card>
 
         <Card title="Asset Allocation" subtitle="Growth vs defensive">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AllocationDonut
-              data={allocation}
-              centerValue={formatCompact(portfolio.totalValue)}
-              centerLabel="Portfolio"
-            />
-            <Legend
-              items={[
-                { label: `Growth · ${formatPercent(portfolio.growthWeight, 0)}`, color: 'var(--series-1)' },
-                { label: `Defensive · ${formatPercent(portfolio.defensiveWeight, 0)}`, color: 'var(--series-3)' },
-              ]}
-            />
-          </div>
+          {portfolio.totalValue > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <AllocationDonut
+                data={allocation}
+                centerValue={formatCompact(portfolio.totalValue)}
+                centerLabel="Portfolio"
+              />
+              <Legend
+                items={[
+                  { label: `Growth · ${formatPercent(portfolio.growthWeight, 0)}`, color: 'var(--series-1)' },
+                  { label: `Defensive · ${formatPercent(portfolio.defensiveWeight, 0)}`, color: 'var(--series-3)' },
+                ]}
+              />
+            </div>
+          ) : (
+            <div className="placeholder-page" style={{ padding: '40px 24px' }}>
+              <div className="placeholder-title" style={{ fontSize: 15 }}>No holdings yet</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13.5, maxWidth: 300 }}>
+                Add investments to see your growth-vs-defensive split.
+              </p>
+            </div>
+          )}
         </Card>
       </div>
 

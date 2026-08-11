@@ -364,3 +364,39 @@ export function goalProgress(current, target) {
   if (!target || target <= 0) return 0;
   return Math.max(0, Math.min(1, current / target));
 }
+
+/* ------------------------------------------------------------------ */
+/*  Time series                                                        */
+/* ------------------------------------------------------------------ */
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Build a trailing income-vs-expenses series from raw transactions, one point
+ * per calendar month, ending at the most recent month present (or the current
+ * month if `endDate` is given). Transfers are excluded, matching cashFlowSummary.
+ */
+export function monthlyCashFlowTrend(transactions = [], months = 6, endDate = new Date()) {
+  const buckets = new Map(); // 'YYYY-M' -> { income, expenses }
+  for (const txn of transactions) {
+    const cat = CATEGORY_BY_ID[txn.category];
+    const kind = cat?.kind ?? CATEGORY_KIND.EXPENSE;
+    if (kind === CATEGORY_KIND.TRANSFER) continue;
+    const d = new Date(txn.date);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const b = buckets.get(key) ?? { income: 0, expenses: 0 };
+    if (kind === CATEGORY_KIND.INCOME) b.income += Math.abs(txn.amount);
+    else b.expenses += Math.abs(txn.amount);
+    buckets.set(key, b);
+  }
+
+  const out = [];
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+  for (let i = months - 1; i >= 0; i -= 1) {
+    const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+    const b = buckets.get(`${d.getFullYear()}-${d.getMonth()}`) ?? { income: 0, expenses: 0 };
+    out.push({ month: MONTH_LABELS[d.getMonth()], income: b.income, expenses: b.expenses });
+  }
+  return out;
+}

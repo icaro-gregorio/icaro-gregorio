@@ -31,10 +31,12 @@ Other scripts: `npm run build`, `npm run preview`, `npm run lint`,
 
 ```
 src/
-├─ main.jsx                 App entry (Router + DataProvider)
-├─ App.jsx                  Route table
-├─ index.css                Design tokens (light/dark) + layout
-├─ firebase/config.js       Firebase init (falls back to demo mode)
+├─ main.jsx                 App entry (Router + Auth + Data providers)
+├─ App.jsx                  Route table + auth gate
+├─ index.css                Design tokens (light/dark) + layout + forms
+├─ firebase/
+│  ├─ config.js             Firebase init (falls back to demo mode)
+│  └─ firestore.js          Read/write helpers (subscribe, upsert, delete, seed)
 ├─ models/
 │  ├─ schema.js             Typedefs, enums, category system, factory fns
 │  └─ collections.js        Firestore collection names
@@ -42,14 +44,16 @@ src/
 ├─ utils/
 │  ├─ finance.js            The advising engine (offset, ROI, net worth, DTI…)
 │  └─ format.js             AUD currency / percentage / duration formatters
-├─ context/DataContext.jsx  Single data source (demo now, Firestore later)
+├─ context/
+│  ├─ AuthContext.jsx       Firebase Auth (sign in/up/out; demo bypass)
+│  └─ DataContext.jsx       Single data source — live Firestore or demo, + CRUD
 ├─ hooks/useTheme.js        Light/dark theme
 ├─ components/
 │  ├─ layout/               AppShell, Sidebar, Topbar, navigation config
-│  ├─ ui/                   Card, StatCard, ModulePlaceholder
+│  ├─ ui/                   Card, StatCard, Field/inputs, DemoNotice, …
 │  └─ charts/               NetWorthArea, CashFlowBars, AllocationDonut, tooltip
-└─ pages/                   Dashboard (built), CashFlow, Investments,
-                            RealEstate, Profile (scaffolded)
+└─ pages/                   Login, Dashboard, CashFlow + Profile (editable),
+                            Investments + RealEstate (scaffolded)
 ```
 
 ---
@@ -93,20 +97,45 @@ Pure, unit-testable functions in [`src/utils/finance.js`](src/utils/finance.js):
 
 ---
 
-## Firebase setup (to leave demo mode)
+## Demo mode vs. live mode
 
-1. Create a Firebase project and a Web App; enable **Firestore** and **Auth**.
-2. Copy the SDK config into `.env` (see `.env.example`).
-3. Deploy rules/indexes: `firebase deploy --only firestore`.
-4. Wire live reads in `src/context/DataContext.jsx` (marked with a `TODO(firebase)`).
+The app detects whether Firebase credentials are present in `.env`:
 
-Local development against emulators: set `VITE_USE_FIREBASE_EMULATORS=true` and
-run `npm run emulators`.
+- **Demo mode** (no credentials) — no sign-in required; the UI shows the
+  read-only sample dataset so you can explore immediately.
+- **Live mode** (credentials present) — the app shows a **login screen**
+  (email/password or Google). Once signed in, your data is read from and written
+  to **Firestore** in real time, private to your account, and it persists across
+  refreshes and devices. Editable today: the **Cash Flow** page (add / edit /
+  delete transactions and accounts) and the **Client Profile**. A **Load sample
+  data** button seeds a fresh account so you can see the full dashboard.
+
+## Firebase setup (to enable saving)
+
+1. Go to the [Firebase console](https://console.firebase.google.com) → **Add
+   project** (any name; Google Analytics optional).
+2. **Build → Authentication → Get started**, then enable the **Email/Password**
+   and **Google** sign-in providers.
+3. **Build → Firestore Database → Create database** → start in **production
+   mode** (the included `firestore.rules` already lock data to its owner).
+4. **Project settings (gear) → General → Your apps → Web app (`</>`)**, register
+   an app, and copy the `firebaseConfig` values into a new `.env` file (use
+   `.env.example` as the template).
+5. Restart `npm run dev`. You'll now get a login screen — create an account,
+   then click **Load sample data** or start entering your own.
+
+Optional — deploy the security rules/indexes with the Firebase CLI:
+`npm i -g firebase-tools && firebase login && firebase deploy --only firestore`.
+For local development against emulators, set `VITE_USE_FIREBASE_EMULATORS=true`
+and run `npm run emulators`.
 
 ---
 
 ## Roadmap
 
-Dashboard is fully built. Next: the Cash Flow data-grid + CSV import, the
-Investments holdings/allocation views, and the Real Estate offset calculator &
-running-costs ledger — all reading through the same schema and engine.
+Built: the Dashboard, the editable **Cash Flow** module, the **Client Profile**,
+authentication, and Firestore persistence. Next: editing UIs for the
+**Investments** (holdings/allocation) and **Real Estate** (offset calculator +
+running-costs ledger) modules, CSV import for transactions, and monthly
+net-worth snapshots for the trend chart — all reading through the same schema
+and engine.
