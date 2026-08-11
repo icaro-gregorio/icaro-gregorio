@@ -520,3 +520,26 @@ select.input { cursor: pointer; }
 .auth-switch button:hover { text-decoration: underline; }
 
 .splash { color: var(--text-muted); font-size: 14px; }
+
+/* --------------------------- Calculator readout --------------------------- */
+
+.calc-grid { display: flex; flex-direction: column; gap: 2px; }
+.calc-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 9px 0; font-size: 13.5px;
+}
+.calc-row > span:first-child { color: var(--text-secondary); }
+.calc-row > span:last-child { font-weight: 600; text-align: right; }
+.calc-highlight > span:last-child { color: var(--good-ink); }
+.calc-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.calc-note {
+  margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted); line-height: 1.5;
+}
+
+.chip-active {
+  background: var(--accent-weak);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
